@@ -1,0 +1,150 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+<div>
+    <input type="file" accept="video/*" capture="user" />
+    <input type="file" accept="video/*" capture="environment" />
+    <div style="width:70%; height:50vh;">
+        <video id="player" autoplay class="h-100 w-100"></video>
+    </div>
+    <div class="mt-5"></div>
+    <div class="mt-3">
+        <button class="btn btn-primary" id="video-start"> Start </button>
+        <button class="btn btn-danger" id="video-stop"> Stop </button>
+        <button id="video-download" class="btn btn-info">download</button>
+    </div>
+    <div>
+            <div class="select">
+                <label for="audioSource">Audio source: </label><select id="audioSource"></select>
+            </div>
+
+            <div class="select">
+                <label for="videoSource">Video source: </label><select id="videoSource"></select>
+            </div>
+    </div>
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        let mediaRecorder;
+        let recordedBlobs;
+        const player = document.getElementById('player');
+        const videoStart = document.getElementById('video-start');
+        const videoStop = document.getElementById('video-stop');
+        const videoDownload = document.getElementById('video-download');
+
+
+        const audioSelect = document.querySelector('select#audioSource');
+        const videoSelect = document.querySelector('select#videoSource');
+
+        videoStop.addEventListener("click",(event)=>{
+            if(mediaRecorder){
+                console.log(mediaRecorder.stop);
+                mediaRecorder.stop();
+            }
+        });
+
+        videoStart.addEventListener("click",()=>{
+            navigator.mediaDevices
+              .getUserMedia(
+                  {
+                      audio:true,
+                      video: true,
+                  }
+                ).then(gotStream)
+                .then(getDevices)
+                .then(gotDevices)
+                .catch((errors)=>{
+                    console.log(errors);
+                });
+        })
+
+
+        // for sources(audio/video) switch
+
+        const getStream = () => {
+            if (window.stream) {
+                window.stream.getTracks().forEach(track => {
+                track.stop();
+            });
+            }
+            const audioSource = audioSelect.value;
+            const videoSource = videoSelect.value;
+            const constraints = {
+                audio: {deviceId: audioSource ? {exact: audioSource} : undefined},
+                video: {deviceId: videoSource ? {exact: videoSource} : undefined}
+            };
+            return navigator.mediaDevices.getUserMedia(constraints).
+                then(gotStream);
+            }
+
+         audioSelect.onchange = getStream;
+         videoSelect.onchange = getStream;
+
+        // end of sources(audio/video) switch
+
+         const gotStream = (stream) => {
+                    
+            window.stream = stream; // make stream available to console
+            audioSelect.selectedIndex = [...audioSelect.options].
+            findIndex(option => option.text === stream.getAudioTracks()[0].label);
+            videoSelect.selectedIndex = [...videoSelect.options].
+            findIndex(option => option.text === stream.getVideoTracks()[0].label);
+            player.srcObject = stream;
+            recordedBlobs = [];
+            try{
+                mediaRecorder = new MediaRecorder(window.stream, { mimeType: 'video/mp4', audioBitsPerSecond: 6000, videoBitsPerSecond: 100000 });
+            }catch{
+                console.log(`Failed`);
+            }
+            mediaRecorder.start();
+            console.log(mediaRecorder);
+         }
+
+        const getDevices = () => {
+            // AFAICT in Safari this only gets default devices until gUM is called :/
+            return navigator.mediaDevices.enumerateDevices();
+        }
+        const  gotDevices = (deviceInfos) => {
+                window.deviceInfos = deviceInfos; // make available to console
+                while (videoSelect.lastChild) {
+                    videoSelect.removeChild(videoSelect.lastChild);
+                }
+                while (audioSelect.lastChild) {
+                    audioSelect.removeChild(audioSelect.lastChild);
+                }
+                for (const deviceInfo of deviceInfos) {
+                    const option = document.createElement('option');
+                    option.value = deviceInfo.deviceId;
+                    if (deviceInfo.kind === 'audioinput') {
+                        option.text = deviceInfo.label || `Microphone ${audioSelect.length + 1}`;
+                        audioSelect.appendChild(option);
+                    }else if (deviceInfo.kind === 'videoinput') {
+                        option.text = deviceInfo.label || `Camera ${videoSelect.length + 1}`;
+                        videoSelect.appendChild(option);
+                    }
+                }
+            }
+
+        videoStop.addEventListener("click",(event)=>{
+
+        });
+        videoDownload.addEventListener("click", () => {
+            //const blob = new Blob(recordedBlobs, { type: 'video/mp4' });
+            const blob = new Blob(recordedBlobs, { type: 'video/mp4' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const guidID = crypto.randomUUID();
+            a.style.display = 'none';
+            a.href = url;
+            a.download = '' + guidID + '.mp4';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+        });
+            
+    </script>
+}
