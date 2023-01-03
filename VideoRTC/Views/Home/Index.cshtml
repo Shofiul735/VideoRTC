@@ -8,7 +8,7 @@
     -->
 
     <div style="width:70%; height:50vh;">
-        <video id="player" autoplay class="h-100 w-100">
+        <video id="player" playsinline="" webkit-playsinline="" autoplay class="h-100 w-100">
         </video>
     </div>
     <div class="mt-5"></div>
@@ -52,6 +52,7 @@
             if (mediaRecorder) {
                 console.log(mediaRecorder.stop);
                 mediaRecorder.stop();
+                player.srcObject = null;
             }
             shouldStop = false;
             videoPreview.disabled = false;
