@@ -9,7 +9,7 @@
     <input type="file" accept="video/*" capture="environment" />
     -->
 
-    <div style="width:70%; height:50vh;">
+    <div style="width:50vw; height:40vh;">
         <video id="player" playsinline="" webkit-playsinline="" autoplay muted class="h-100 w-100">
         </video>
     </div>
@@ -17,17 +17,19 @@
     <div class="mt-3">
         <button class="btn btn-primary" id="video-start"> Start </button>
         <button class="btn btn-danger" id="video-stop" disabled> Stop </button>
-        <a id="video-download" class="btn btn-info">Download</a>
-        <button class="btn btn-danger" id="video-preview" disabled> Preview </button>
+        <a id="video-download" class="btn btn-success">Download</a>
+        <button class="btn btn-info" id="video-preview" disabled> Preview </button>
     </div>
-    <p class="text-warning mt-2" id="message"> Click start button to start the video </p>
-    <div>
+    <p class="text-warning mt-2 mb-0" id="message"> Click the start button to start the video </p>
+    <div class="d-flex gap-5">
         <div class="select">
-            <label for="audioSource">Audio source: </label><select id="audioSource"></select>
+            <label for="audioSource">Audio source: </label>
+            <select class="form-select" id="audioSource"></select>
         </div>
 
         <div class="select">
-            <label for="videoSource">Video source: </label><select id="videoSource"></select>
+            <label for="videoSource">Video source: </label>
+            <select class="form-select" id="videoSource"></select>
         </div>
     </div>
 </div>
@@ -68,7 +70,7 @@
             if(recordedChunks){
                 shouldStop = false;
                 videoPreview.disabled = false;
-                message.innerText = "Click start button to start a new video";
+                message.innerText = "Click the start button to start a new video";
                 videoStart.disabled = false;
                 videoStop.disabled = true;
                 videoPreview.disabled = false;
@@ -107,14 +109,21 @@
                 .then(getDevices)
                 .then(gotDevices)
                 .catch((errors) => {
-                    console.log(errors);
+                    alert(`Camera and microphone permission required,please refresh the page and try again!`);
                     return;
                 });
-            message.innerText = "Recording,click stop button to stop the video,click preview button to preview";
-            videoStart.disabled = true;
-            videoStop.disabled = false;
-            videoPreview.disabled = true;
-            player.muted = true;
+            /*
+            navigator.permissions.query({ name: "camera" }).then(res => {
+                    console.log(res);
+                    if(res.state == "granted"){
+                        message.innerText = "Recording,click stop button to stop the video,click preview button to preview";
+                        videoStart.disabled = true;
+                        videoStop.disabled = false;
+                        videoPreview.disabled = true;
+                        player.muted = true;
+                    }
+            });
+            */
         })
         // for sources(audio/video) switch
         const getStream = () => {
@@ -143,6 +152,13 @@
         // end of sources(audio/video) switch
         const gotStream = (stream) => {
 
+            
+            message.innerText = "Recording,click stop button to stop the video,click preview button to preview";
+            videoStart.disabled = true;
+            videoStop.disabled = false;
+            videoPreview.disabled = true;
+            player.muted = true;
+
             window.stream = stream; // make stream available to console
             audioSelect.selectedIndex = [...audioSelect.options].
                 findIndex(option => option.text === stream.getAudioTracks()[0].label);
@@ -151,7 +167,7 @@
             player.srcObject = stream;
             recordedChunks = [];
             try {
-                mediaRecorder = new MediaRecorder(window.stream, { mimeType: mimeType, audioBitsPerSecond: 18000, videoBitsPerSecond: 700000 });
+                mediaRecorder = new MediaRecorder(window.stream, { mimeType: mimeType, audioBitsPerSecond: 128000, videoBitsPerSecond: 12000000 }); //audioBits=128000 is max
             } catch {
                 console.log(`Failed`);
             }
