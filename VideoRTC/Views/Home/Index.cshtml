@@ -44,82 +44,194 @@
 
 @section Scripts{
     <script type="text/javascript">
-        let mimeType = 'video/webm';
-        if (/iPod|iPhone|iPad/i.test(navigator.userAgent)) {
-            mimeType = 'video/mp4';
-        }
-        let mediaRecorder;
-        let recordedChunks;
-        let shouldStop = false;
-        let stopped = false;
-        let appendSource = false;
-        const player = document.getElementById('player');
-        const videoStart = document.getElementById('video-start');
-        const videoStop = document.getElementById('video-stop');
-        const downloadLink = document.getElementById('video-download');
-        const videoPreview = document.getElementById('video-preview');
-        const message = document.getElementById('message');
-        
-        let videoSource = null;
-        const audioSelect = document.querySelector('select#audioSource');
-        const videoSelect = document.querySelector('select#videoSource');
 
-        videoStop.addEventListener("click", (event) => {
-            if (mediaRecorder && mediaRecorder.state === "recording") {
-                console.log(mediaRecorder.stop);
-                mediaRecorder.stop();
-                while(player.lastChild){
-                    player.removeChild(player.lastChild);
-                }
-                appendSource = false;
-                videoSource = false;
-                player.srcObject = null;
+        $(document).ready(()=>{
+
+            let mimeType = 'video/webm';
+            if (/iPod|iPhone|iPad/i.test(navigator.userAgent)) {
+                mimeType = 'video/mp4';
             }
-            if(recordedChunks){
-                shouldStop = false;
-                videoPreview.disabled = false;
-                message.innerText = "Click the start button to start a new video";
-                videoStart.disabled = false;
-                videoStop.disabled = true;
-                videoPreview.disabled = false;
-            }
-        });
+            let mediaRecorder;
+            let recordedChunks;
+            let shouldStop = false;
+            let stopped = false;
+            let appendSource = false;
+            const player = $('#player');
+            const videoStart = $('#video-start');
+            const videoStop = $('#video-stop');
+            const downloadLink = $('#video-download');
+            const videoPreview = $('#video-preview');
+            const message = $('#message');
+
+            let videoSource = null;
+            const audioSelect = $('#audioSource');
+            const videoSelect = $('#videoSource');
 
 
-        videoPreview.addEventListener("click", () => {
-            if (recordedChunks){
-                const Blobstream = new Blob(recordedChunks, { type: mimeType });
-                if (!videoSource) {
-                    videoSource = document.createElement('source');
+
+            const getStream = () => {
+                if (window.stream) {
+                    window.stream.getTracks().forEach(track => {
+                        track.stop();
+                    });
                 }
-                videoSource.setAttribute('src', window.URL.createObjectURL(Blobstream));
-                videoSource.setAttribute('type', Blobstream.type);
-                if (!appendSource) {
-                    player.appendChild(videoSource);
-                    appendSource = true;
-                }
-                player.controls = true;
-                player.muted = false;
-                player.load();
-                player.play();
+                message.text("Recording,click stop button to stop the video,click preview button to preview");
+                videoStart.prop('disabled', true);
+                videoStop.prop('disabled', false);
+                videoPreview.prop('disabled', true);
+                player.muted = true;
+
+                const audioSource = audioSelect.value;
+                const videoSource = videoSelect.value;
+
+                const constraints = {
+                    audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+                    video: { deviceId: videoSource ? { exact: videoSource } : undefined }
+                };
+                return navigator.mediaDevices.getUserMedia(constraints).
+                    then(gotStream);
             }
-        });
+
+            audioSelect.on("change", getStream);
+            videoSelect.on("change", getStream)
 
 
-        videoStart.addEventListener("click", () => {
-            navigator.mediaDevices
-                .getUserMedia(
-                    {
-                        audio: true,
-                        video: true,
+            const gotStream = (stream) => {
+                message.text("Recording,click stop button to stop the video,click preview button to preview");
+                videoStart.prop('disabled', true);
+                videoStop.prop('disabled', false);
+                videoPreview.prop('disabled', true);
+                player.muted = true;
+
+                window.stream = stream; // make stream available to console
+                audioSelect.selectedIndex = [...audioSelect.children()].
+                    findIndex(option => option.text === stream.getAudioTracks()[0].label);
+                videoSelect.selectedIndex = [...videoSelect.children()].
+                    findIndex(option => option.text === stream.getVideoTracks()[0].label);
+                player.srcObject = stream;
+                recordedChunks = [];
+                try {
+                    mediaRecorder = new MediaRecorder(window.stream, { mimeType: mimeType, audioBitsPerSecond: 128000, videoBitsPerSecond: 12000000 }); //audioBits=128000 is max
+                } catch {
+                    console.log(`Failed`);
+                }
+                mediaRecorder.addEventListener('dataavailable', function (e) {
+                    if (e.data.size > 0) {
+                        recordedChunks.push(e.data);
                     }
-                ).then(gotStream)
-                .then(getDevices)
-                .then(gotDevices)
-                .catch((errors) => {
-                    alert(`Camera and microphone permissions are required,please refresh the page and try again!`);
-                    return;
+                    if (shouldStop === true && stopped === false) {
+                        mediaRecorder.stop();
+                        stopped = true;
+                    }
                 });
+                mediaRecorder.addEventListener('stop', function () {
+                    downloadLink.href = URL.createObjectURL(new Blob(recordedChunks));
+                    downloadLink.download = 'acetest.mp4';
+                });
+                mediaRecorder.start();
+                console.log(mediaRecorder);
+            }
+
+
+            const getDevices = () => {
+                // AFAICT in Safari this only gets default devices until gUM is called :/
+                return navigator.mediaDevices.enumerateDevices();
+            }
+
+            const gotDevices = (deviceInfos) => {
+                window.deviceInfos = deviceInfos; // make available to console
+                while (videoSelect.lastChild) {
+                    videoSelect.removeChild(videoSelect.lastChild);
+                }
+                while (audioSelect.lastChild) {
+                    audioSelect.removeChild(audioSelect.lastChild);
+                }
+                for (const deviceInfo of deviceInfos) {
+                    const option = document.createElement('option');
+                    option.value = deviceInfo.deviceId;
+                    if (deviceInfo.kind === 'audioinput') {
+                        option.text = deviceInfo.label || `Microphone ${audioSelect.length + 1}`;
+                        audioSelect.append(option);
+                    } else if (deviceInfo.kind === 'videoinput') {
+                        option.text = deviceInfo.label || `Camera ${videoSelect.length + 1}`;
+                        videoSelect.append(option);
+                    }
+                }
+            }
+
+            videoStop.on("click", (event) => {
+                if (mediaRecorder && mediaRecorder.state === "recording") {
+                    console.log(mediaRecorder.stop);
+                    mediaRecorder.stop();
+                    while (player.lastChild) {
+                        player.removeChild(player.lastChild);
+                    }
+                    appendSource = false;
+                    videoSource = false;
+                    player.srcObject = null;
+                }
+                if (recordedChunks) {
+                    shouldStop = false;
+                    videoPreview.prop('disabled', false);
+                    message.text("Click the start button to start a new video");
+                    videoStart.prop('disabled', false);
+                    videoStop.prop('disabled', true);
+                    videoPreview.prop('disabled', false);
+                }
+            });
+
+            videoPreview.on("click", () => {
+                if (recordedChunks) {
+                    const Blobstream = new Blob(recordedChunks, { type: mimeType });
+                    if (!videoSource) {
+                        videoSource = document.createElement('source');
+                    }
+                    videoSource.attr('src', window.URL.createObjectURL(Blobstream));
+                    videoSource.attr('type', Blobstream.type);
+                    if (!appendSource) {
+                        player.append(videoSource);
+                        appendSource = true;
+                    }
+                    player.controls = true;
+                    player.muted = false;
+                    player.load();
+                    player.play();
+                }
+            });
+
+
+            videoStart.on("click", () => {
+                navigator.mediaDevices
+                    .getUserMedia(
+                        {
+                            audio: true,
+                            video: true,
+                        }
+                    ).then(gotStream)
+                    .then(getDevices)
+                    .then(gotDevices)
+                    .catch((errors) => {
+                        //alert(`Camera and microphone permissions are required,please refresh the page and try again!`);
+                        console.log(errors);
+                        return;
+                    });
+            });
+
+
+
+            getDevices().then(gotDevices);
+            console.log(recordedChunks);
+
+
+        });
+
+
+
+
+
+
+
+
             /*
             navigator.permissions.query({ name: "camera" }).then(res => {
                     console.log(res);
@@ -132,95 +244,13 @@
                     }
             });
             */
-        })
         // for sources(audio/video) switch
-        const getStream = () => {
-            if (window.stream) {
-                window.stream.getTracks().forEach(track => {
-                    track.stop();
-                });
-            }
-            message.innerText = "Recording,click stop button to stop the video,click preview button to preview";
-            videoStart.disabled = true;
-            videoStop.disabled = false;
-            videoPreview.disabled = true;
-            player.muted = true;
 
-            const audioSource = audioSelect.value;
-            const videoSource = videoSelect.value;
-            const constraints = {
-                audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
-                video: { deviceId: videoSource ? { exact: videoSource } : undefined }
-            };
-            return navigator.mediaDevices.getUserMedia(constraints).
-                then(gotStream);
-        }
-        audioSelect.onchange = getStream;
-        videoSelect.onchange = getStream;
+
         // end of sources(audio/video) switch
-        const gotStream = (stream) => {
 
 
-            message.innerText = "Recording,click stop button to stop the video,click preview button to preview";
-            videoStart.disabled = true;
-            videoStop.disabled = false;
-            videoPreview.disabled = true;
-            player.muted = true;
 
-            window.stream = stream; // make stream available to console
-            audioSelect.selectedIndex = [...audioSelect.options].
-                findIndex(option => option.text === stream.getAudioTracks()[0].label);
-            videoSelect.selectedIndex = [...videoSelect.options].
-                findIndex(option => option.text === stream.getVideoTracks()[0].label);
-            player.srcObject = stream;
-            recordedChunks = [];
-            try {
-                mediaRecorder = new MediaRecorder(window.stream, { mimeType: mimeType, audioBitsPerSecond: 128000, videoBitsPerSecond: 12000000 }); //audioBits=128000 is max
-            } catch {
-                console.log(`Failed`);
-            }
-            mediaRecorder.addEventListener('dataavailable', function (e) {
-                if (e.data.size > 0) {
-                    recordedChunks.push(e.data);
-                }
-                if (shouldStop === true && stopped === false) {
-                    mediaRecorder.stop();
-                    stopped = true;
-                }
-            });
-            mediaRecorder.addEventListener('stop', function () {
-                downloadLink.href = URL.createObjectURL(new Blob(recordedChunks));
-                downloadLink.download = 'acetest.mp4';
-            });
-            mediaRecorder.start();
-            console.log(mediaRecorder);
-        }
-        const getDevices = () => {
-            // AFAICT in Safari this only gets default devices until gUM is called :/
-            return navigator.mediaDevices.enumerateDevices();
-        }
-        const gotDevices = (deviceInfos) => {
-            window.deviceInfos = deviceInfos; // make available to console
-            while (videoSelect.lastChild) {
-                videoSelect.removeChild(videoSelect.lastChild);
-            }
-            while (audioSelect.lastChild) {
-                audioSelect.removeChild(audioSelect.lastChild);
-            }
-            for (const deviceInfo of deviceInfos) {
-                const option = document.createElement('option');
-                option.value = deviceInfo.deviceId;
-                if (deviceInfo.kind === 'audioinput') {
-                    option.text = deviceInfo.label || `Microphone ${audioSelect.length + 1}`;
-                    audioSelect.appendChild(option);
-                } else if (deviceInfo.kind === 'videoinput') {
-                    option.text = deviceInfo.label || `Camera ${videoSelect.length + 1}`;
-                    videoSelect.appendChild(option);
-                }
-            }
-        }
-        getDevices().then(gotDevices);
-        console.log(recordedChunks);
                 /*
         videoDownload.addEventListener("click", () => {
             //const blob = new Blob(recordedBlobs, { type: 'video/mp4' });
