@@ -53,7 +53,7 @@
                     
                     timeOut = setInterval( ()=> {
                        converTime(++time);
-                        $("#timer").text(min + ":" + sec);
+                        $("#timer").text(`${min}:${sec}`);
                     },1000);
                     
                 }  
@@ -61,7 +61,7 @@
 
             $("#reset").on("click",(event)=>{
                 clearInterval(timeOut);
-                $("#timer").text("00" + ":" + "00");
+                $("#timer").text(`00:00`);
                 time = 0;
                 start = false;
                 $("#start").text("Start");
