@@ -1,6 +1,72 @@
 ﻿@{
     ViewData["Title"] = "Privacy Policy";
 }
-<h1>@ViewData["Title"]</h1>
 
-<p>Use this page to detail your site's privacy policy.</p>
+<style>
+    #timer{
+        background: red;
+        padding: 3px 15px;
+        color: white !important;
+        border-radius: 15px;
+    }
+</style>
+
+<div class="d-flex flex-column justify-content-center align-items-center vh-100">
+    <div class="m-3">
+        <span id="timer">00:00</span>
+    </div>
+    <div>
+        <button id="start" class="btn btn-primary"> Start </button>
+        <button id="reset" class="btn btn-warning"> Reset </button>
+    </div>
+</div>
+
+@section Scripts{
+    <script type="text/javascript">
+        $(document).ready(() => {
+            let start = false;
+            let min = "00";
+            let sec = "00";
+            let time = 0;
+            let timeOut;
+            const timer = document.getElementById("timer");
+
+            const converTime = (time) => {
+                min = Math.floor(time / 60);
+                if(min < 10){
+                    min = "0"+min;
+                }
+                sec = Math.floor(time % 60);
+                if(sec < 10){
+                    sec = "0"+sec;
+                }
+            }
+
+            $("#start").on("click",(event)=>{
+                if(start){
+                    clearInterval(timeOut);
+                    event.target.innerText = "Start";
+                    start = false;
+                }else{
+                    event.target.innerText = "Pause";
+                    start = true;
+                    
+                    timeOut = setInterval( ()=> {
+                       converTime(++time);
+                        $("#timer").text(min + ":" + sec);
+                    },1000);
+                    
+                }  
+            });
+
+            $("#reset").on("click",(event)=>{
+                clearInterval(timeOut);
+                $("#timer").text("00" + ":" + "00");
+                time = 0;
+                start = false;
+                $("#start").text("Start");
+            });
+
+        });
+    </script>
+}

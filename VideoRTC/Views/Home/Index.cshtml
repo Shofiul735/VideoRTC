@@ -6,6 +6,9 @@
     button:disabled{
         opacity: 0.25 !important;
     }
+    .disabled-btn{
+        opacity: 0.25 !important;
+    }
 </style>
 
 <div>
@@ -15,7 +18,7 @@
     -->
 
     <div style="width:50vw; height:40vh;">
-        <video id="player" playsinline="" webkit-playsinline="" autoplay muted class="h-100 w-100">
+        <video id="player" playsinline="" autoplay muted class="h-100 w-100">
         </video>
     </div>
     <div class="mt-5"></div>
@@ -157,7 +160,7 @@
         // end of sources(audio/video) switch
         const gotStream = (stream) => {
 
-            
+
             message.innerText = "Recording,click stop button to stop the video,click preview button to preview";
             videoStart.disabled = true;
             videoStop.disabled = false;
