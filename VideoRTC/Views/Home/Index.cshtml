@@ -79,7 +79,7 @@
                 videoStart.prop('disabled', true);
                 videoStop.prop('disabled', false);
                 videoPreview.prop('disabled', true);
-                player.muted = true;
+                player.prop('muted',true);
 
                 const audioSource = audioSelect.value;
                 const videoSource = videoSelect.value;
@@ -101,14 +101,14 @@
                 videoStart.prop('disabled', true);
                 videoStop.prop('disabled', false);
                 videoPreview.prop('disabled', true);
-                player.muted = true;
+                player.prop('muted',true);
 
                 window.stream = stream; // make stream available to console
                 audioSelect.selectedIndex = [...audioSelect.children()].
                     findIndex(option => option.text === stream.getAudioTracks()[0].label);
                 videoSelect.selectedIndex = [...videoSelect.children()].
                     findIndex(option => option.text === stream.getVideoTracks()[0].label);
-                player.srcObject = stream;
+                player.prop('srcObject',stream);
                 recordedChunks = [];
                 try {
                     mediaRecorder = new MediaRecorder(window.stream, { mimeType: mimeType, audioBitsPerSecond: 128000, videoBitsPerSecond: 12000000 }); //audioBits=128000 is max
@@ -125,8 +125,8 @@
                     }
                 });
                 mediaRecorder.addEventListener('stop', function () {
-                    downloadLink.href = URL.createObjectURL(new Blob(recordedChunks));
-                    downloadLink.download = 'acetest.mp4';
+                    downloadLink.prop('href',URL.createObjectURL(new Blob(recordedChunks)));
+                    downloadLink.prop('download','acetest.mp4');
                 });
                 mediaRecorder.start();
                 console.log(mediaRecorder);
@@ -140,11 +140,12 @@
 
             const gotDevices = (deviceInfos) => {
                 window.deviceInfos = deviceInfos; // make available to console
-                while (videoSelect.lastChild) {
-                    videoSelect.removeChild(videoSelect.lastChild);
+                
+                while (videoSelect.children().last().length > 0) {
+                    videoSelect.children().last().remove();
                 }
-                while (audioSelect.lastChild) {
-                    audioSelect.removeChild(audioSelect.lastChild);
+                while (audioSelect.children().last().length > 0) {
+                    audioSelect.children().last().remove()
                 }
                 for (const deviceInfo of deviceInfos) {
                     const option = document.createElement('option');
@@ -163,12 +164,12 @@
                 if (mediaRecorder && mediaRecorder.state === "recording") {
                     console.log(mediaRecorder.stop);
                     mediaRecorder.stop();
-                    while (player.lastChild) {
-                        player.removeChild(player.lastChild);
+                    while (player.children().last().length > 0) {
+                        player.children().last().remove();
                     }
                     appendSource = false;
                     videoSource = false;
-                    player.srcObject = null;
+                    player.prop('srcObject',null);
                 }
                 if (recordedChunks) {
                     shouldStop = false;
@@ -186,16 +187,17 @@
                     if (!videoSource) {
                         videoSource = document.createElement('source');
                     }
-                    videoSource.attr('src', window.URL.createObjectURL(Blobstream));
-                    videoSource.attr('type', Blobstream.type);
+                    videoSource.src =  window.URL.createObjectURL(Blobstream);
+                    videoSource.type = Blobstream.type;
                     if (!appendSource) {
                         player.append(videoSource);
                         appendSource = true;
                     }
-                    player.controls = true;
-                    player.muted = false;
-                    player.load();
-                    player.play();
+                    player.prop('controls',true);
+                    player.prop('muted', false);
+                    //console.log(player.load);
+                    //player.load();
+                    //player.play();
                 }
             });
 
