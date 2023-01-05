@@ -55,16 +55,7 @@
             let shouldStop = false;
             let stopped = false;
             let appendSource = false;
-            const player = $('#player');
-            const videoStart = $('#video-start');
-            const videoStop = $('#video-stop');
-            const downloadLink = $('#video-download');
-            const videoPreview = $('#video-preview');
-            const message = $('#message');
-
             let videoSource = null;
-            const audioSelect = $('#audioSource');
-            const videoSelect = $('#videoSource');
 
 
 
@@ -109,7 +100,7 @@
                 } catch {
                     console.log(`Failed`);
                 }
-                mediaRecorder.addEventListener('dataavailable', function (e) {
+                mediaRecorder.ondataavailable = (e) => {
                     if (e.data.size > 0) {
                         recordedChunks.push(e.data);
                     }
@@ -117,11 +108,11 @@
                         mediaRecorder.stop();
                         stopped = true;
                     }
-                });
-                mediaRecorder.addEventListener('stop', function () {
+                };
+                mediaRecorder.onstop =  () => {
                     $('#video-download').prop('href', URL.createObjectURL(new Blob(recordedChunks)));
                     $('#video-download').prop('download', 'acetest.mp4');
-                });
+                };
                 mediaRecorder.start();
                 console.log(mediaRecorder);
             }
@@ -184,14 +175,11 @@
                     videoSource.src =  window.URL.createObjectURL(Blobstream);
                     videoSource.type = Blobstream.type;
                     if (!appendSource) {
-                    $('#player').append(videoSource);
+                        $('#player').append(videoSource);
                         appendSource = true;
                     }
                     $('#player').prop('controls', true);
                     $('#player').prop('muted', false);
-                    //console.log(player.load);
-                    //player.load();
-                    //player.play();
                 }
             };
 
@@ -213,47 +201,8 @@
                     });
             };
 
-
-
             getDevices().then(gotDevices);
             console.log(recordedChunks);
 
-            /*
-            navigator.permissions.query({ name: "camera" }).then(res => {
-                    console.log(res);
-                    if(res.state == "granted"){
-                        message.innerText = "Recording,click stop button to stop the video,click preview button to preview";
-                        videoStart.disabled = true;
-                        videoStop.disabled = false;
-                        videoPreview.disabled = true;
-                        player.muted = true;
-                    }
-            });
-            */
-        // for sources(audio/video) switch
-
-
-        // end of sources(audio/video) switch
-
-
-
-                /*
-        videoDownload.addEventListener("click", () => {
-            //const blob = new Blob(recordedBlobs, { type: 'video/mp4' });
-            const blob = new Blob(recordedBlobs, { type: 'video/mp4' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            const guidID = crypto.randomUUID();
-            a.style.display = 'none';
-            a.href = url;
-            a.download = '' + guidID + '.mp4';
-            document.body.appendChild(a);
-            a.click();
-            setTimeout(() => {
-                document.body.removeChild(a);
-                window.URL.revokeObjectURL(url);
-            }, 100);
-        });
-        */
     </script>
 }
