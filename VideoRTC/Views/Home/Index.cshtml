@@ -23,21 +23,21 @@
     </div>
     <div class="mt-5"></div>
     <div class="mt-3">
-        <button class="btn btn-primary" id="video-start"> Start </button>
-        <button class="btn btn-danger" id="video-stop" disabled> Stop </button>
+        <button class="btn btn-primary" id="video-start" onclick="onStart()"> Start </button>
+        <button class="btn btn-danger" id="video-stop" disabled onclick="onStop()"> Stop </button>
         <a id="video-download" class="btn btn-success">Download</a>
-        <button class="btn btn-info" id="video-preview" disabled> Preview </button>
+        <button class="btn btn-info" id="video-preview" disabled onclick="onPreview()"> Preview </button>
     </div>
     <p class="text-warning mt-2 mb-0" id="message"> Click the start button to start the video </p>
     <div class="d-flex gap-5">
         <div class="select">
             <label for="audioSource">Audio source: </label>
-            <select class="form-select" id="audioSource"></select>
+            <select onchange="getStream()" class="form-select" id="audioSource"></select>
         </div>
 
         <div class="select">
             <label for="videoSource">Video source: </label>
-            <select class="form-select" id="videoSource"></select>
+            <select onchange="getStream()" class="form-select" id="videoSource"></select>
         </div>
     </div>
 </div>
@@ -45,7 +45,6 @@
 @section Scripts{
     <script type="text/javascript">
 
-        $(document).ready(()=>{
 
             let mimeType = 'video/webm';
             if (/iPod|iPhone|iPad/i.test(navigator.userAgent)) {
@@ -92,8 +91,6 @@
                     then(gotStream);
             }
 
-            audioSelect.on("change", getStream);
-            videoSelect.on("change", getStream)
 
 
             const gotStream = (stream) => {
@@ -160,7 +157,7 @@
                 }
             }
 
-            videoStop.on("click", (event) => {
+            const onStop = (event) => {
                 if (mediaRecorder && mediaRecorder.state === "recording") {
                     console.log(mediaRecorder.stop);
                     mediaRecorder.stop();
@@ -179,9 +176,9 @@
                     videoStop.prop('disabled', true);
                     videoPreview.prop('disabled', false);
                 }
-            });
+            }
 
-            videoPreview.on("click", () => {
+            const onPreview = () => {
                 if (recordedChunks) {
                     const Blobstream = new Blob(recordedChunks, { type: mimeType });
                     if (!videoSource) {
@@ -199,10 +196,10 @@
                     //player.load();
                     //player.play();
                 }
-            });
+            };
 
 
-            videoStart.on("click", () => {
+            const onStart =  () => {
                 navigator.mediaDevices
                     .getUserMedia(
                         {
@@ -217,22 +214,12 @@
                         console.log(errors);
                         return;
                     });
-            });
+            };
 
 
 
             getDevices().then(gotDevices);
             console.log(recordedChunks);
-
-
-        });
-
-
-
-
-
-
-
 
             /*
             navigator.permissions.query({ name: "camera" }).then(res => {
